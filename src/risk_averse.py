@@ -19,7 +19,8 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras.optimizers import Adam
 
-FILENAME = "../short.csv"
+# FILENAME = "../short.csv"
+FILENAME = "../Final Modified Data_Rev2.csv"
 
 class DQNNet():
     def __init__(self, state_size, action_size, learning_rate, **kwargs):
@@ -548,7 +549,6 @@ def train(config):
                     average_price = np.mean(np.array([price for price in historical_price if price != 0]))
                     next_state = np.concatenate((x[day * 24 + hour, :], next_SOC, np.array([average_price])), axis = -1)
                 else:
-                    raise SystemExit
                     break
 
             SOC = next_SOC 

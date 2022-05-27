@@ -39,6 +39,7 @@ class DQNAgent():
         self.action_size = config['action_size']
         self.learning_rate = config['learning_rate']
         self.batch_size = config['batch_size']
+        self.gamma = config['gamma']
 
         self.explore_start = config['explore_start']
         self.explore_stop = config['explore_stop']
@@ -52,7 +53,8 @@ class DQNAgent():
 
     def get_action(self, state):
         epsilon = self.explore_stop + (self.explore_start - self.explore_stop) * np.exp(-self.decay_rate * self.decay_step)
-        action = self.net.model.predict(np.expand_dims(state, axis = 0), verbose=0)
+        qfactors = self.net.model.predict(np.expand_dims(state, axis = 0), verbose=0)
+        action = np.argmax(qfactors)
         if np.random.random() < epsilon:
             # explore
             action = np.random.randint(0, self.action_size)
@@ -64,10 +66,16 @@ class DQNAgent():
 
         states_mb = np.array([each[0][0] for each in batch])
         actions_mb = np.array([each[0][1] for each in batch])
-        rewards_mb = np.array([each[0][2] for each in batch]) 
+        rewards_mb = np.array([each[0][2][0] for each in batch]) 
         next_states_mb = np.array([each[0][3] for each in batch])
         dones_mb = np.array([each[0][4] for each in batch])
 
-        targets_mb = self.net.model.predict(states_mb)
-        q_next_state = self.net.model.predict(next_states_mb)
-        target_batch = []
+        nextq = self.net.model.predict(next_states_mb, verbose=0)
+        maxq = np.amax(nextq, axis=1)
+        td_target = self.net.model.predict(states_mb, verbose=0)
+
+        td_target[range(self.batch_size), actions_mb] = \
+            rewards_mb + (1-dones_mb)*maxq*self.gamma
+        
+        self.net.model.fit(states_mb, td_target, epochs=1, verbose=0)
+

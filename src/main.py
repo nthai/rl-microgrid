@@ -92,17 +92,22 @@ def train(data: dict, config: dict):
         print(f'Episode {ep} starts.')
         state = env.reset()
         tstart = time.time()
-
+        total_reward = 0
         while True:
             try:
                 action = agent.get_action(state)
-                _, _, _, state, _ = env.step(action)
-                print(state)
+                _, _, reward, state, _ = env.step(action)
+                total_reward += reward[0]
+                agent.train(env.memory)
             except DayCountExceeded:
                 break
+            except IndexError as err:
+                print(action)
+                raise err
 
         tend = time.time()
         print(f'Episode {ep} - training time: {(tend - tstart)/60:.2f}mins')
+        print(f'Episode {ep} - total reward: {total_reward:.2f}')
 
 def main():
     df = data_read(DATAFILE)
