@@ -16,14 +16,14 @@ class DQNNet():
     
     def create_model(self) -> Model:
         input = Input(shape = (self.state_size, ))
-        x = Dense(40, activation = "elu", 
-                kernel_initializer = glorot_uniform(seed = 42))(input)
-        x = Dense(160, activation = "elu",
-                kernel_initializer = glorot_uniform(seed = 42))(x)
+        x = Dense(40, activation="elu", 
+                kernel_initializer=glorot_uniform(seed = 42))(input)
+        x = Dense(160, activation="elu",
+                kernel_initializer=glorot_uniform(seed = 42))(x)
         output = Dense(self.action_size, activation = "linear", 
-                kernel_initializer = glorot_uniform(seed = 42))(x)
-        model = Model(inputs = [input], outputs = [output])
-        model.compile(loss = "mse", optimizer = Adam(lr = self.learning_rate))
+                kernel_initializer=glorot_uniform(seed = 42))(x)
+        model = Model(inputs=[input], outputs=[output])
+        model.compile(loss="mse", optimizer=Adam(learning_rate=self.learning_rate))
         model.summary()
         return model
 
@@ -77,5 +77,13 @@ class DQNAgent():
         td_target[range(self.batch_size), actions_mb] = \
             rewards_mb + (1-dones_mb)*maxq*self.gamma
         
-        self.net.model.fit(states_mb, td_target, epochs=1, verbose=0)
+        self.net.model.fit(states_mb, td_target, sample_weight=ISWeights_mb.ravel(), epochs=1, verbose=0)
 
+        # Update priority
+        errs = []
+        preds = self.net.model.predict(states_mb, verbose=0)
+        for idx in range(self.batch_size):
+            err = np.abs(preds[idx][actions_mb[idx]] - td_target[idx][actions_mb[idx]])
+            errs.append(err)
+        errs = np.array(errs)
+        memory.batch_update(tree_idx.astype(int), errs)

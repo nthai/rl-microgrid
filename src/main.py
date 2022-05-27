@@ -116,5 +116,10 @@ def main():
     train(data, config)
 
 if __name__ == '__main__':
+    if __debug__:
+        np.seterr(all='warn')
+        import warnings
+        warnings.filterwarnings('error')
+
     np.random.seed(42)
     main()

@@ -22,10 +22,10 @@ class SumTree():
 
          tree:
                 0
-             / \
-            0   0
-         / \ / \
-        0  0 0  0 
+               / \
+              0   0
+             / \ / \
+            0  0 0  0 
         """
         self.capacity = capacity
         self.data = np.zeros(capacity, dtype = object)

@@ -24,7 +24,10 @@ class Grid(gym.Env):
         self.memory = Memory(self.memory_size)
 
     def _get_state(self, day, hour, soc):
-        average_price = np.mean(self.historical_price[self.historical_price != 0])
+        nonzeros = self.historical_price[self.historical_price != 0]
+        average_price = 0
+        if nonzeros.size > 0:
+            average_price = np.mean(nonzeros)
         state = np.concatenate((self.data[day*24+hour, :], soc, np.array([average_price])), axis=-1)
         return state
 
