@@ -112,6 +112,11 @@ def train(data: dict, config: dict):
 def main():
     df = data_read(DATAFILE)
     config = get_config()
+
+    if 'short' in DATAFILE:
+        print(f'Working on smaller dataset: {DATAFILE}')
+        config['memory_size'] = 100
+
     data = standardization(df, show=False)
     train(data, config)
 

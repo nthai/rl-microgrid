@@ -154,7 +154,7 @@ class Memory():  # stored as (s, a, r, s_) in SumTree
         self.tree = SumTree(capacity)
 
     def store(self, experience):
-    
+
         # Find the max priority
         max_priority = np.max(self.tree.tree[-self.tree.capacity:])
 
@@ -184,6 +184,9 @@ class Memory():  # stored as (s, a, r, s_) in SumTree
 
         prob_min = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.tree[0]
         max_weight = (prob_min * n) ** (-self.PER_b)
+
+        print(self.tree.tree)
+        raise SystemExit
 
         for i in range(n):
             a = priority_segment * i

@@ -31,7 +31,7 @@ class Memory():  # stored as (s, a, r, s_) in SumTree
         self.tree = SumTree(capacity)
 
     def store(self, experience):
-        
+
         # Find the max priority
         max_priority = np.max(self.tree.tree[-self.tree.capacity:])
 
@@ -60,9 +60,8 @@ class Memory():  # stored as (s, a, r, s_) in SumTree
         self.PER_b = np.min([1., self.PER_b + self.PER_b_increment_per_sampling])
 
         prob_min = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.tree[0]
-        max_weight = 0
-        if prob_min != 0:
-            max_weight = (prob_min * n) ** (-self.PER_b)
+
+        max_weight = (prob_min * n) ** (-self.PER_b)
 
         for i in range(n):
             a = priority_segment * i
@@ -70,9 +69,7 @@ class Memory():  # stored as (s, a, r, s_) in SumTree
             value = np.random.uniform(a, b)
             index, priority, data = self.tree.get_leaf(value)
             prob = priority / self.tree.tree[0]
-            b_ISWeights[i, 0] = 0
-            if max_weight != 0:
-                b_ISWeights[i, 0] = (prob * n) ** (-self.PER_b) / max_weight
+            b_ISWeights[i, 0] = (prob * n) ** (-self.PER_b) / max_weight
             b_idx[i]= index
             b_memory.append([data])
 
