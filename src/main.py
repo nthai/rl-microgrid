@@ -98,6 +98,7 @@ def train(data: dict, config: dict):
                 action = agent.get_action(state)
                 _, _, reward, state, _ = env.step(action)
                 total_reward += reward[0]
+                print(reward)
                 agent.train(env.memory)
             except DayCountExceeded:
                 break

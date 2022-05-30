@@ -65,8 +65,8 @@ class Grid(gym.Env):
             self.hour = 0
 
             # output progress bar
-            bar = get_bar(self.day, self.dlength/24)
-            sys.stdout.write(f'\r[{bar}] {self.day/(self.dlength/24):5.2f}%')
+            # bar = get_bar(self.day, self.dlength/24)
+            # sys.stdout.write(f'\r[{bar}] {self.day/(self.dlength/24):5.2f}%')
 
             if self.day >= self.dlength / 24:
                 raise DayCountExceeded(f'Day count ({self.day}) has exceeded data length ({self.dlength / 24})')

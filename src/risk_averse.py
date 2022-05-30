@@ -521,6 +521,7 @@ def train(config):
 
             # Compute the reward and new state based on the selected action
             next_SOC, reward = battery.compute(state, action)
+            print(reward)
             total_reward += reward
 
 
