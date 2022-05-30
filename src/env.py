@@ -1,3 +1,4 @@
+import sys
 import gym
 import numpy as np
 
@@ -5,6 +6,11 @@ from battery import Battery
 from memory import Memory
 
 class DayCountExceeded(Exception): pass
+
+def get_bar(val, maxval):
+    bcount = round(val / maxval * 10)
+    bar = ''.join(['-' if i < bcount else ' ' for i in range(10)])
+    return bar
 
 class Grid(gym.Env):
     def __init__(self, config, data):
@@ -57,6 +63,11 @@ class Grid(gym.Env):
             done = True
             self.day += 1
             self.hour = 0
+
+            # output progress bar
+            bar = get_bar(self.day, self.dlength/24)
+            sys.stdout.write(f'\r[{bar}] {self.day/(self.dlength/24):5.2f}%')
+
             if self.day >= self.dlength / 24:
                 raise DayCountExceeded(f'Day count ({self.day}) has exceeded data length ({self.dlength / 24})')
             else:

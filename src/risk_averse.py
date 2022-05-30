@@ -185,9 +185,6 @@ class Memory():  # stored as (s, a, r, s_) in SumTree
         prob_min = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.tree[0]
         max_weight = (prob_min * n) ** (-self.PER_b)
 
-        print(self.tree.tree)
-        raise SystemExit
-
         for i in range(n):
             a = priority_segment * i
             b = priority_segment * (i + 1)
@@ -327,7 +324,7 @@ class Battery():
 
 def get_bar(val, maxval):
     bcount = round(val / maxval * 10)
-    bar = ''.join(['-' if i <= bcount else ' ' for i in range(10)])
+    bar = ''.join(['-' if i < bcount else ' ' for i in range(10)])
     return bar
 
 def init():

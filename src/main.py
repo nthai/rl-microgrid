@@ -6,8 +6,8 @@ from sklearn.preprocessing import StandardScaler
 from env import DayCountExceeded, Grid
 from dqn import DQNAgent
 
-# DATAFILE = '../Final Modified Data_Rev2.csv'
-DATAFILE = '../short.csv'
+DATAFILE = '../Final Modified Data_Rev2.csv'
+# DATAFILE = '../short.csv'
 
 def data_read(filename: str) -> pd.DataFrame:
     df_raw = pd.read_csv(filename)
