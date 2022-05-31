@@ -46,7 +46,12 @@ class DQNAgent():
         self.decay_rate = config['decay_rate']
 
         self.net = DQNNet(self.state_size, self.action_size, self.learning_rate)
+        # prioritized experience replay buffer
+        self.memory = Memory(config['memory_size'])
         self.reset()
+
+    def store(self, experience):
+        self.memory.store(experience)
 
     def reset(self):
         self.decay_step = 0
@@ -61,8 +66,8 @@ class DQNAgent():
         self.decay_step += 1
         return action
     
-    def train(self, memory: Memory):
-        tree_idx, batch, ISWeights_mb = memory.sample(self.batch_size)
+    def train(self):
+        tree_idx, batch, ISWeights_mb = self.memory.sample(self.batch_size)
 
         states_mb = np.array([each[0][0] for each in batch])
         actions_mb = np.array([each[0][1] for each in batch])
@@ -86,4 +91,4 @@ class DQNAgent():
             err = np.abs(preds[idx][actions_mb[idx]] - td_target[idx][actions_mb[idx]])
             errs.append(err)
         errs = np.array(errs)
-        memory.batch_update(tree_idx.astype(int), errs)
+        self.memory.batch_update(tree_idx.astype(int), errs)

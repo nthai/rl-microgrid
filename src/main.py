@@ -6,8 +6,8 @@ from sklearn.preprocessing import StandardScaler
 from env import DayCountExceeded, Grid
 from dqn import DQNAgent
 
-DATAFILE = '../Final Modified Data_Rev2.csv'
-# DATAFILE = '../short.csv'
+# DATAFILE = '../Final Modified Data_Rev2.csv'
+DATAFILE = '../short.csv'
 
 def data_read(filename: str) -> pd.DataFrame:
     df_raw = pd.read_csv(filename)
@@ -81,12 +81,19 @@ def get_config() -> dict:
 
     return config
 
+def init_memory(config, agent, env):
+    for step in range(config['pretrain_length']):
+        action = np.random.randint(0, config['action_size'])
+        experience = env.step(action)
+        agent.store(experience)
+    return agent, env
+
 def train(data: dict, config: dict):
 
     env = Grid(config, data)
     agent = DQNAgent(config)
-    print(env.dlength)
-    env.init_memory()
+    env.reset()
+    agent, env = init_memory(config, agent, env)
 
     for ep in range(config['episodes']):
         print(f'Episode {ep} starts.')
@@ -96,10 +103,12 @@ def train(data: dict, config: dict):
         while True:
             try:
                 action = agent.get_action(state)
-                _, _, reward, state, _ = env.step(action)
+                experience = env.step(action)
+                _, _, reward, state, _ = experience
                 total_reward += reward[0]
-                print(reward)
-                agent.train(env.memory)
+                # print(reward)
+                agent.store(experience)
+                agent.train()
             except DayCountExceeded:
                 break
             except IndexError as err:
@@ -117,6 +126,7 @@ def main():
     if 'short' in DATAFILE:
         print(f'Working on smaller dataset: {DATAFILE}')
         config['memory_size'] = 100
+        config['pretrain_length'] = 100
 
     data = standardization(df, show=False)
     train(data, config)

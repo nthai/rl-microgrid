@@ -19,8 +19,8 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras.optimizers import Adam
 
-# FILENAME = "../short.csv"
-FILENAME = "../Final Modified Data_Rev2.csv"
+FILENAME = "../short.csv"
+# FILENAME = "../Final Modified Data_Rev2.csv"
 
 class DQNNet():
     def __init__(self, state_size, action_size, learning_rate, **kwargs):
@@ -521,10 +521,10 @@ def train(config):
 
             # Compute the reward and new state based on the selected action
             next_SOC, reward = battery.compute(state, action)
-            print(reward)
+            # print(reward)
             total_reward += reward
 
-
+            done = False
             # Store the experience in memory
             if hour < 23:
                 hour += 1
@@ -577,7 +577,8 @@ def train(config):
                     target_batch.append(rewards_mb[i])
                 else:
                     target = rewards_mb[i] + gamma * q_next_state[i][action]
-                    target_batch.append(rewards_mb[i])
+                    # target_batch.append(rewards_mb[i])
+                    target_batch.append(target)
 
             # Replace the original with the updated targets
             one_hot = np.zeros((len(batch), action_size))
@@ -631,6 +632,11 @@ def main():
     }
 
     config = standardization(df, config)
+
+    if 'short' in FILENAME:
+        config['memory_size'] = 100
+        config['pretrain_length'] = 100
+
     train(config)
 
 if __name__ == '__main__':
