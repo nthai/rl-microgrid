@@ -39,6 +39,10 @@ class Battery():
         current_SOC = state[3]
         average_price = state[4]
 
+        infos = None
+        if __debug__:
+            infos = dict()
+
         # Update SOC level
         # Assign penalty if battery operates exceeding permissible limit
         delta_SOC = self.action_set[action] * self.P_rated / self.E_rated
@@ -75,10 +79,17 @@ class Battery():
         trading_cost = current_price * (next_SOC - current_SOC) * self.E_rated
         wear_cost = self.wear_cost * np.abs((next_SOC - current_SOC) * self.E_rated)
         reward = energy_gain - trading_cost - wear_cost - penalty - penalty_pv
-        
-        return next_SOC, reward
-  
-  
+
+        if __debug__:
+            infos['energy_gain'] = float(energy_gain)
+            infos['trading_cost'] = float(trading_cost)
+            infos['wear_cost'] = float(wear_cost)
+            infos['penalty'] = float(penalty)
+            infos['penalty_pv'] = float(penalty_pv)
+
+        return next_SOC, reward, infos
+
+
     def plot_multiplier(self):
         SOC = np.linspace(0, 1, 100)
         multiplier_c = []

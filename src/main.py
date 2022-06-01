@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from env import DayCountExceeded, Grid
+from env import Grid
 from dqn import DQNAgent
 
 # DATAFILE = '../Final Modified Data_Rev2.csv'
@@ -82,10 +82,11 @@ def get_config() -> dict:
     return config
 
 def init_memory(config, agent, env):
-    for step in range(config['pretrain_length']):
+    for _ in range(config['pretrain_length']):
         action = np.random.randint(0, config['action_size'])
-        experience = env.step(action)
-        agent.store(experience)
+        experience, _ = env.step(action)
+        pstate, act, reward, state, done = experience
+        agent.store(pstate, [1] * config['action_size'], act, 1, reward, state, done)
     return agent, env
 
 def train(data: dict, config: dict):
@@ -96,28 +97,35 @@ def train(data: dict, config: dict):
     agent, env = init_memory(config, agent, env)
 
     for ep in range(config['episodes']):
+        if __debug__:
+            logfile = open(f'logs/episode-{ep}.log', 'w')
         print(f'Episode {ep} starts.')
         state = env.reset()
         tstart = time.time()
-        total_reward = 0
-        while True:
+        total_reward, done = 0, False
+        while not done:
+            action, factor = agent.select_action(state)
+            experience, infos = env.step(action)
+            pstate, act, reward, state, done = experience
+            if __debug__:
+                logstr = f'{pstate} [{reward[0]:8.4f}] [{action:2d}]'
+                print(logstr, file=logfile)
+            total_reward += reward[0]
+            agent.store(pstate, [1] * config['action_size'], act, factor, reward, state, done)
             try:
-                action = agent.get_action(state)
-                experience = env.step(action)
-                _, _, reward, state, _ = experience
-                total_reward += reward[0]
-                # print(reward)
-                agent.store(experience)
                 agent.train()
-            except DayCountExceeded:
-                break
-            except IndexError as err:
-                print(action)
-                raise err
+            except:
+                print(pstate)
+                raise
 
         tend = time.time()
         print(f'Episode {ep} - training time: {(tend - tstart)/60:.2f}mins')
         print(f'Episode {ep} - total reward: {total_reward:.2f}')
+
+        if __debug__:
+            logfile.close()
+
+        break
 
 def main():
     df = data_read(DATAFILE)
@@ -136,6 +144,7 @@ if __name__ == '__main__':
         np.seterr(all='warn')
         import warnings
         warnings.filterwarnings('error')
+        np.set_printoptions(suppress=True)
 
     np.random.seed(42)
     main()

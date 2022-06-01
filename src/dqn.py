@@ -18,8 +18,8 @@ class DQNNet():
         input = Input(shape = (self.state_size, ))
         x = Dense(40, activation="elu", 
                 kernel_initializer=glorot_uniform(seed = 42))(input)
-        x = Dense(160, activation="elu",
-                kernel_initializer=glorot_uniform(seed = 42))(x)
+        # x = Dense(160, activation="elu",
+        #         kernel_initializer=glorot_uniform(seed = 42))(x)
         output = Dense(self.action_size, activation = "linear", 
                 kernel_initializer=glorot_uniform(seed = 42))(x)
         model = Model(inputs=[input], outputs=[output])
@@ -50,13 +50,15 @@ class DQNAgent():
         self.memory = Memory(config['memory_size'])
         self.reset()
 
-    def store(self, experience):
+    def store(self, prev_state, prev_mask, action, prob, reward,
+              next_state, done):
+        experience = (prev_state, action, reward, next_state, done)
         self.memory.store(experience)
 
     def reset(self):
         self.decay_step = 0
 
-    def get_action(self, state):
+    def select_action(self, state):
         epsilon = self.explore_stop + (self.explore_start - self.explore_stop) * np.exp(-self.decay_rate * self.decay_step)
         qfactors = self.net.model.predict(np.expand_dims(state, axis = 0), verbose=0)
         action = np.argmax(qfactors)
@@ -64,16 +66,20 @@ class DQNAgent():
             # explore
             action = np.random.randint(0, self.action_size)
         self.decay_step += 1
-        return action
+        return action, qfactors[0][action]
     
     def train(self):
         tree_idx, batch, ISWeights_mb = self.memory.sample(self.batch_size)
 
-        states_mb = np.array([each[0][0] for each in batch])
-        actions_mb = np.array([each[0][1] for each in batch])
-        rewards_mb = np.array([each[0][2][0] for each in batch]) 
-        next_states_mb = np.array([each[0][3] for each in batch])
-        dones_mb = np.array([each[0][4] for each in batch])
+        try:
+            states_mb = np.array([each[0][0] for each in batch])
+            actions_mb = np.array([each[0][1] for each in batch])
+            rewards_mb = np.array([each[0][2][0] for each in batch]) 
+            next_states_mb = np.array([each[0][3] for each in batch])
+            dones_mb = np.array([each[0][4] for each in batch])
+        except:
+            print([each[0][0] for each in batch])
+            raise
 
         nextq = self.net.model.predict(next_states_mb, verbose=0)
         maxq = np.amax(nextq, axis=1)

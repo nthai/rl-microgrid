@@ -1,0 +1,35 @@
+DQN with PER on full data
+
+Model: "model"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_1 (InputLayer)        [(None, 5)]               0         
+                                                                 
+ dense (Dense)               (None, 40)                240       
+                                                                 
+ dense_1 (Dense)             (None, 160)               6560      
+                                                                 
+ dense_2 (Dense)             (None, 11)                1771      
+                                                                 
+=================================================================
+Total params: 8,571
+Trainable params: 8,571
+Non-trainable params: 0
+_________________________________________________________________
+Episode 0 starts.
+2022-06-01 10:24:41.459551: I tensorflow/stream_executor/cuda/cuda_blas.cc:1786] TensorFloat-32 will be used for the matrix multiplication. This will only be logged once.
+Episode 0 - training time: 85.54mins
+Episode 0 - total reward: -4958.83
+Episode 1 starts.
+Episode 1 - training time: 91.55mins
+Episode 1 - total reward: 51732.80
+Episode 2 starts.
+Episode 2 - training time: 97.38mins
+Episode 2 - total reward: 56638.74
+Episode 3 starts.
+Episode 3 - training time: 93.68mins
+Episode 3 - total reward: 56571.86
+Episode 4 starts.
+Episode 4 - training time: 107.35mins
+Episode 4 - total reward: 58197.68
