@@ -4,10 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from env import Grid
-from dqn import DQNAgent
+from dqn_torch import DQNAgent
+from ppo import PPOAgent
 
-# DATAFILE = '../Final Modified Data_Rev2.csv'
-DATAFILE = '../short.csv'
+DATAFILE = '../Final Modified Data_Rev2.csv'
+# DATAFILE = '../short.csv'
 
 def data_read(filename: str) -> pd.DataFrame:
     df_raw = pd.read_csv(filename)
@@ -79,7 +80,19 @@ def get_config() -> dict:
         'memory_size': 10000 # # of experiences Memory can keep
     }
 
-    return config
+    ppoconfig = {
+        'hidden_nodes': 50,
+        'epochs': 5,
+        'alphaR': 0.1,
+        'eps_clips': 0.1,
+        'gae_lambda': 0.9
+    }
+
+    dqnconfig = {
+        'epsilon': .1
+    }
+
+    return {**config, **ppoconfig, **dqnconfig}
 
 def init_memory(config, agent, env):
     for _ in range(config['pretrain_length']):
@@ -94,7 +107,8 @@ def train(data: dict, config: dict):
     env = Grid(config, data)
     agent = DQNAgent(config)
     env.reset()
-    agent, env = init_memory(config, agent, env)
+    # if isinstance(agent, DQNAgent):
+    #     agent, env = init_memory(config, agent, env)
 
     for ep in range(config['episodes']):
         if __debug__:
@@ -103,8 +117,9 @@ def train(data: dict, config: dict):
         state = env.reset()
         tstart = time.time()
         total_reward, done = 0, False
+        step = 0
         while not done:
-            action, factor = agent.select_action(state)
+            action, factor = agent.select_action(state, [1] * config['action_size'])
             experience, infos = env.step(action)
             pstate, act, reward, state, done = experience
             if __debug__:
@@ -112,11 +127,11 @@ def train(data: dict, config: dict):
                 print(logstr, file=logfile)
             total_reward += reward[0]
             agent.store(pstate, [1] * config['action_size'], act, factor, reward, state, done)
-            try:
-                agent.train()
-            except:
-                print(pstate)
-                raise
+            agent.train()
+
+            if step % 1000 == 0:
+                print(reward)
+            step += 1
 
         tend = time.time()
         print(f'Episode {ep} - training time: {(tend - tstart)/60:.2f}mins')
@@ -124,8 +139,6 @@ def train(data: dict, config: dict):
 
         if __debug__:
             logfile.close()
-
-        break
 
 def main():
     df = data_read(DATAFILE)

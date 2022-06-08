@@ -3,15 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
+import numpy as np
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PPOAgent(nn.Module):
-    def __init__(self, dim_state, num_actions, config):
+    def __init__(self, config):
         super().__init__()
 
-        self.dim_state = dim_state
-        self.num_actions = num_actions
+        self.dim_state = config['state_size']
+        self.num_actions = config['action_size']
         self.hidden_nodes = config["hidden_nodes"]
         self.learn_rate = config["learning_rate"]
         self.epochs = config["epochs"] # should be 3...30
@@ -20,8 +21,8 @@ class PPOAgent(nn.Module):
         self.eps_clips = config["eps_clips"] # should be 0.1 or 0.2
         self.gae_lambda = config["gae_lambda"] # should be ~ 0.9
 
-        self.input_layer = nn.Linear(dim_state, self.hidden_nodes)
-        self.policy_layer = nn.Linear(self.hidden_nodes, num_actions)
+        self.input_layer = nn.Linear(self.dim_state, self.hidden_nodes)
+        self.policy_layer = nn.Linear(self.hidden_nodes, self.num_actions)
         self.value_layer = nn.Linear(self.hidden_nodes, 1)
 
         nn.init.xavier_uniform_(self.input_layer.weight)
@@ -68,7 +69,7 @@ class PPOAgent(nn.Module):
         return action, prob
 
     def store(self, prev_state, prev_mask, action, prob,
-                      reward, next_state):
+              reward, next_state, done):
         self.prev_states.append(prev_state)
         self.prev_masks.append(prev_mask)
         self.actions.append(action)
@@ -77,16 +78,19 @@ class PPOAgent(nn.Module):
         self.next_states.append(next_state)
 
     def _get_history_tensors(self):
-        pstates = torch.tensor(self.prev_states, dtype=torch.float32, device=device)
-        pmasks = torch.tensor(self.prev_masks, dtype=torch.float32, device=device)
-        actions = torch.tensor(self.actions, dtype=torch.long, device=device)
-        probs = torch.tensor(self.probs, dtype=torch.float32, device=device)
-        rewards = torch.tensor(self.rewards, dtype=torch.float32, device=device)
-        nstates = torch.tensor(self.next_states, dtype=torch.float32, device=device)
+        pstates = torch.tensor(np.array(self.prev_states), dtype=torch.float32, device=device)
+        pmasks = torch.tensor(np.array(self.prev_masks), dtype=torch.float32, device=device)
+        actions = torch.tensor(np.array(self.actions), dtype=torch.long, device=device)
+        probs = torch.tensor(np.array(self.probs), dtype=torch.float32, device=device)
+        rewards = torch.tensor(np.array(self.rewards), dtype=torch.float32, device=device)
+        nstates = torch.tensor(np.array(self.next_states), dtype=torch.float32, device=device)
 
         return pstates, pmasks, actions, probs, rewards, nstates
 
     def train(self):
+        if len(self.prev_states) < self.batch_size:
+            return
+
         pstates, pmasks, actions, probs, rewards, nstates = self._get_history_tensors()
 
         self.avg_reward = ((1 - self.alphaR) * self.avg_reward +
@@ -95,9 +99,11 @@ class PPOAgent(nn.Module):
         for _ in range(self.epochs):
             pvalues = self._value(pstates).squeeze()
             nvalues = self._value(nstates).squeeze()
-            td_target = rewards - self.avg_reward + nvalues
+            # td_target = rewards - self.avg_reward + nvalues
+            td_target = rewards.view(-1) - self.avg_reward + nvalues.view(-1)
 
             delta = td_target - pvalues # this is the TD-error
+            delta = delta.cpu()
             delta = delta.detach().numpy()
 
             advantages = []
@@ -105,7 +111,7 @@ class PPOAgent(nn.Module):
             for tderr in delta[::-1]:
                 advantage = self.gae_lambda * advantage + tderr
                 advantages.append(advantage)
-            advantages = list(reversed(advantages))
+            advantages = np.array(list(reversed(advantages)))
             advantages = torch.tensor(advantages, dtype=torch.float32, device=device)
 
             pdistr = self._policy(pstates, pmasks)
