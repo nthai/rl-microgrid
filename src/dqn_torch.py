@@ -58,7 +58,9 @@ class DQNAgent(nn.Module):
         self.hidden_nodes = config['hidden_nodes']
         self.learn_rate = config['learning_rate']
         self.epsilon = config['epsilon']
+        self.explore_rate = self.epsilon
         self.gamma = config['gamma']
+        self.alpha = config['alpha']
 
         self.memory = Memory()
 
@@ -85,8 +87,9 @@ class DQNAgent(nn.Module):
 
         qfactors = self.forward(state)
         action = 0
-        if torch.rand([1]) < self.epsilon:
+        if torch.rand([1]) < self.explore_rate:
             action = torch.randint(0, self.num_actions, [1]).item()
+            self.explore_rate = max(self.explore_rate * .9, .0001)
         else:
             action = qfactors.argmax().item()
         return action, qfactors[action].item()
@@ -105,8 +108,12 @@ class DQNAgent(nn.Module):
         maxq = self(nstates).max(1).values.unsqueeze(1)
         dones = (1 - dones).unsqueeze(1)
 
-        target = rewards + self.gamma * maxq * dones
+        target = (1 - self.alpha) * prevq + self.alpha * (rewards + self.gamma * maxq * dones)
         loss = self.criterion(prevq, target)
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+
+    def reset(self):
+        self.explore_rate = self.epsilon

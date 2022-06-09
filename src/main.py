@@ -1,3 +1,4 @@
+import random
 import time
 import numpy as np
 import pandas as pd
@@ -69,7 +70,7 @@ def get_config() -> dict:
         'state_size': 5, # PV, load, RTP, past 24 hour average RTP, SOC
         'action_size': 11,
         'learning_rate': .001,
-        'episodes': 5,
+        'episodes': 25,
         'batch_size': 64,
         'timesteps': 24,
         'explore_start': 1.0, # exploration probability at start
@@ -89,7 +90,8 @@ def get_config() -> dict:
     }
 
     dqnconfig = {
-        'epsilon': .1
+        'epsilon': .5,
+        'alpha': .1
     }
 
     return {**config, **ppoconfig, **dqnconfig}
@@ -115,11 +117,13 @@ def train(data: dict, config: dict):
             logfile = open(f'logs/episode-{ep}.log', 'w')
         print(f'Episode {ep} starts.')
         state = env.reset()
+        agent.reset()
         tstart = time.time()
         total_reward, done = 0, False
         step = 0
         while not done:
             action, factor = agent.select_action(state, [1] * config['action_size'])
+            action = random.randint(0, 10)
             experience, infos = env.step(action)
             pstate, act, reward, state, done = experience
             if __debug__:
@@ -127,9 +131,9 @@ def train(data: dict, config: dict):
                 print(logstr, file=logfile)
             total_reward += reward[0]
             agent.store(pstate, [1] * config['action_size'], act, factor, reward, state, done)
-            agent.train()
+            # agent.train()
 
-            if step % 1000 == 0:
+            if step % 5000 == 0:
                 print(reward)
             step += 1
 

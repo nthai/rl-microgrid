@@ -128,3 +128,6 @@ class PPOAgent(nn.Module):
             self.optimizer.step()
 
         self._reset_history()
+    
+    def reset(self):
+        pass
